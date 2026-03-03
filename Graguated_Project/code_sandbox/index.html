@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>程式碼沙盒測試</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; max-width: 600px; }
+        textarea { width: 100%; height: 150px; font-family: monospace; font-size: 16px; margin-bottom: 10px; padding: 10px; }
+        pre { background-color: #f4f4f4; padding: 15px; border-radius: 5px; min-height: 50px; white-space: pre-wrap; word-wrap: break-word; }
+        .error { color: red; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h2>AI 程式教學系統 - 沙盒測試</h2>
+    <p>請在下方輸入 Python 程式碼：</p>
+    <textarea id="codeInput">print("Hello World!")
+print("沙盒測試成功！")</textarea><br>
+    <button onclick="submitCode()">送出執行</button>
+
+    <h3>執行結果：</h3>
+    <pre id="output">等待執行...</pre>
+
+    <script>
+        async function submitCode() {
+            const code = document.getElementById('codeInput').value;
+            const outputElement = document.getElementById('output');
+            const button = document.querySelector('button');
+            
+            outputElement.innerHTML = "執行中，請稍候...";
+            outputElement.className = "";
+            button.disabled = true;
+
+            try {
+                // 呼叫你剛架好的 FastAPI 後端
+                const response = await fetch('http://127.0.0.1:8000/submit_code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code })
+                });
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    outputElement.innerText = result.error;
+                    outputElement.className = "error";
+                } else if (result.stderr) {
+                    let out = "【錯誤訊息】\n" + result.stderr;
+                    if (result.intent_match && result.intent_match.best_match) {
+                        const b = result.intent_match.best_match;
+                        out += "\n\n--- 意圖庫匹配 ---\n最相似解法: " + (b.solution_id || "") + " (" + (b.description || "") + ")，相似度: " + (b.score ?? "");
+                    } else if (result.intent_match === null) {
+                        out += "\n\n--- 意圖庫：未連線或尚未建檔，請先執行 mini_intent_library 的 embed_and_search.py 並啟動 Qdrant。";
+                    }
+                    outputElement.innerText = out;
+                    outputElement.className = "error";
+                } else {
+                    let out = result.stdout || "（程式執行成功，但無輸出結果）";
+                    if (result.intent_match && result.intent_match.best_match) {
+                        const b = result.intent_match.best_match;
+                        out += "\n\n--- 意圖庫匹配 ---\n最相似解法: " + (b.solution_id || "") + " (" + (b.description || "") + ")，相似度: " + (b.score ?? "");
+                    } else if (result.intent_match === null) {
+                        out += "\n\n--- 意圖庫：未連線或尚未建檔，請先執行 mini_intent_library 的 embed_and_search.py 並啟動 Qdrant。";
+                    }
+                    outputElement.innerText = out;
+                    outputElement.className = "";
+                }
+            } catch (error) {
+                outputElement.innerText = "無法連線至 API 伺服器，請確認 FastAPI 是否有啟動。";
+                outputElement.className = "error";
+            } finally {
+                button.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

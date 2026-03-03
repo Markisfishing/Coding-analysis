@@ -1,0 +1,4 @@
+# 迷你意圖庫 - 依賴 (計畫 4.2)
+transformers>=4.30.0
+torch>=2.0.0
+qdrant-client>=1.7.0

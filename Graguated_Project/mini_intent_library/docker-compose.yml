@@ -1,0 +1,18 @@
+# 迷你意圖庫 - Qdrant 向量資料庫 (計畫 4.2)
+# 使用方式: docker compose up -d
+# 停止: docker compose down
+
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant-intent-lib
+    ports:
+      - "6333:6333"   # REST API
+      - "6334:6334"   # gRPC (可選)
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+
+volumes:
+  qdrant_storage:
